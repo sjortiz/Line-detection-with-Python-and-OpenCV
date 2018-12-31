@@ -14,12 +14,23 @@ def canny(image):
     return cv2.Canny(blur, 50, 150)
 
 
+def display_lines(image, lines):
+    line_image = np.zeros_like(image)
+
+    if lines.any():
+
+        for line in lines:
+            x1, y1, x2, y2 = line.reshape(4)
+            cv2.line(line_image, (x1, y1), (x2, y2), (255, 0, 0), 10)
+
+    return line_image
+
 # Mark the region of interest, in this case the line
 def region_of_interest(image):
     # Height of the image (y-axis), image.shape returns [y,x]
     height = image.shape[0]
 
-    # Cretes an list of polygons, which are formed by a list
+    # Creates an list of polygons, which are formed by a list
     # of it's cartecian points, one poly -> [(x1,y2)...(xn,yn)]
     polygons = np.array([
         [(200, height), (1100, height), (550, 250)]
@@ -35,9 +46,20 @@ def region_of_interest(image):
 # Read the image
 image = cv2.imread('test_image.jpg')
 # Make a copy of the image to no affect the original
-canny_image = canny(np.copy(image))
+lane_image = np.copy(image)
+
+canny_image = canny(lane_image)
+cropped_image = region_of_interest(canny_image)
+
+lines = cv2.HoughLinesP(
+    cropped_image, 2, np.pi/180, 100, np.array([]),
+    minLineLength=40, maxLineGap=5)
+
+line_image = display_lines(lane_image, lines)
+
+combo_image = cv2.addWeighted(lane_image, 0.8, line_image, 1, 1)
 
 # Show the image
-cv2.imshow('result', region_of_interest(canny_image))
+cv2.imshow('result', combo_image)
 # Forever
 cv2.waitKey(0)
